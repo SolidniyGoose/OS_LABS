@@ -1,0 +1,73 @@
+\section{Исходная программа}
+
+\subsection{Заголовочный файл monte\_carlo.h}
+\begin{center}
+\lstinputlisting[language=C,caption=Заголовочный файл с объявлениями,captionpos=b]{inc/monte_carlo.h}
+\end{center}
+
+\subsection{Основная программа monte\_carlo.c}
+\begin{center}
+\lstinputlisting[language=C,caption=Реализация многопоточного алгоритма Монте-Карло,captionpos=b]{inc/monte_carlo.c}
+\end{center}
+
+
+\subsection{Пример использования программы}
+\begin{verbatim}
+$ gcc -o monte_carlo monte_carlo.c -lm -lpthread
+$ ./monte_carlo -h
+Использование: ./monte_carlo -r RADIUS -p POINTS -t THREADS [опции]
+Опции:
+  -r RADIUS    Радиус окружности (по умолчанию: 1.0)
+  -p POINTS    Общее количество точек (по умолчанию: 1000000)
+  -t THREADS   Максимальное количество потоков (обязательно)
+  -v           Подробный вывод
+  -h           Эта справка
+Пример: ./monte_carlo -r 5.0 -p 10000000 -t 8
+
+$ ./monte_carlo -r 5.0 -p 10000000 -t 4
+=== Вычисление площади окружности методом Монте-Карло ===
+Радиус: 5.00
+Количество точек: 10000000
+Максимальное количество потоков: 4
+Количество ядер процессора: 8
+
+=== Результаты ===
+Точек внутри окружности: 7853542 из 10000000 (78.54%)
+Вычисленная площадь: 78.535420
+Теоретическая площадь (π * R²): 78.539816
+Погрешность: 0.01%
+Время выполнения: 0.342 секунд
+Скорость обработки: 29239766 точек/сек
+Оценка числа π: 3.141417 (ошибка: 0.01%)
+\end{verbatim}
+
+\subsection{Демонстрация потоков в системе}
+Для демонстрации количества потоков, используемых программой:
+\begin{verbatim}
+# Запуск программы в фоновом режиме
+$ ./monte_carlo -r 5.0 -p 100000000 -t 8 &
+[1] 12345
+
+# Просмотр потоков процесса
+$ ps -eLf | grep monte_carlo
+user    12345 12344 12345  0 12:34 pts/0 00:00:00 ./monte_carlo -r 5.0 -p ...
+user    12345 12344 12346  0 12:34 pts/0 00:00:00 ./monte_carlo -r 5.0 -p ...
+user    12345 12344 12347  0 12:34 pts/0 00:00:00 ./monte_carlo -r 5.0 -p ...
+user    12345 12344 12348  0 12:34 pts/0 00:00:00 ./monte_carlo -r 5.0 -p ...
+... (всего 9 потоков: 8 рабочих + 1 основной)
+
+# Использование top для мониторинга потоков
+$ top -H -p 12345
+\end{verbatim}
+
+\subsection{Анализ системных вызовов с помощью strace}
+\begin{verbatim}
+$ strace -f -o trace.log ./monte_carlo -t 4 -p 1000000
+$ grep -E "pthread_create|clone" trace.log
+[pid 12345] clone(child_stack=NULL, flags=CLONE_THREAD|CLONE_SYSVSEM|CLONE_SETTLS
+      |CLONE_PARENT_SETTID|CLONE_CHILD_CLEARTID, parent_tidptr=0x7f8a1d7d4a10,
+      tls=0x7f8a1d7d4700, child_tidptr=0x7f8a1d7d4a10) = 12346
+[pid 12345] clone(...) = 12347
+[pid 12345] clone(...) = 12348
+[pid 12345] clone(...) = 12349
+\end{verbatim}
