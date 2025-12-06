@@ -1,0 +1,85 @@
+\section{Исходная программа}
+
+\subsection{Заголовочный файл os.h}
+\begin{center}
+\lstinputlisting[language=C++,caption=*Сюда описание*,captionpos=b]{inc/os.h}
+\end{center}
+
+\subsection{Реализация для Linux}
+\begin{center}
+\lstinputlisting[language=C++,caption=*Сюда описание*,captionpos=b]{inc/os_linux.c}
+\end{center}
+
+\subsection{Родительский процесс}
+\begin{center}
+\lstinputlisting[language=C++,caption=*Сюда описание*,captionpos=b]{inc/parent.c}
+\end{center}
+
+\subsection{Дочерний процесс}
+\begin{center}
+\lstinputlisting[language=C++,caption=*Сюда описание*,captionpos=b]{inc/child.c}
+\end{center}
+
+\subsection{Пример вывода программы}
+\begin{verbatim}
+$ gcc -o parent parent.c os_linux.c
+$ gcc -o child child.c
+$ ./parent
+Enter output filename: output.txt
+Hello world.
+This is valid;
+This line is not valid
+Another valid line.
+^D
+Error from child: Invalid line: 'This line is not valid' (must end with '.' or ';')
+
+$ cat output.txt
+Hello world.
+This is valid;
+Another valid line.
+\end{verbatim}
+
+\subsection{Системные вызовы (strace)}
+Для анализа системных вызовов можно использовать утилиту strace:
+\begin{verbatim}
+$ strace -f -o trace.log ./parent
+\end{verbatim}
+
+В файле trace.log будут видны все системные вызовы, включая:
+\begin{itemize}
+    \item \texttt{openat()} — открытие файла
+    \item \texttt{pipe()} — создание каналов
+    \item \texttt{fork()} — создание дочернего процесса
+    \item \texttt{dup2()} — перенаправление дескрипторов
+    \item \texttt{execve()} — запуск дочерней программы
+    \item \texttt{read()/write()} — чтение/запись в каналы
+    \item \texttt{wait4()} — ожидание завершения потомка
+\end{itemize}
+
+Вывод Strace:
+
+\begin{verbatim}
+$ strace ./parent
+execve("./parent", ["./parent"], 0x7ffff13f8940 /* 66 vars */) = 0
+write(1, "Enter output filename: ", 23) = 23
+read(0, "file_output\n", 4096)          = 12
+openat(AT_FDCWD, "file_output", O_WRONLY|O_CREAT|O_TRUNC, 0644) = 3
+pipe([4, 5])                            = 0
+pipe([6, 7])                            = 0
+clone(child_stack=NULL, flags=CLONE_CHILD_CLEARTID|CLONE_CHILD_SETTID|SIGCHLD, 
+      child_tidptr=0x7f8a1d7d4a10) = 2487
+
+[pid  2486] write(4, "helo world\n", 11) = 11
+[pid  2487] read(0, "helo world\n", 512) = 11
+[pid  2487] write(2, "Invalid line: 'helo world' (must end with '.' or ';')\n", 55) = 55
+[pid  2486] read(7, "Invalid line: 'helo world' (must end with '.' or ';')\n", 512) = 55
+[pid  2486] write(1, "Error from child: Invalid line: 'helo world' (must end with '.' or ';')\n", 72) = 72
+
+[pid  2486] write(4, "this is valid\n", 14) = 14
+[pid  2487] read(0, "this is valid\n", 512) = 14
+[pid  2487] write(2, "Invalid line: 'this is valid' (must end with '.' or ';')\n", 57) = 57
+[pid  2486] read(7, "Invalid line: 'this is valid' (must end with '.' or ';')\n", 512) = 57
+[pid  2486] write(1, "Error from child: Invalid line: 'this is valid' (must end with '.' or ';')\n", 74) = 74
+\end{verbatim}
+
+\pagebreak
